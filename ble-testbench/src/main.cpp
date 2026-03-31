@@ -14,13 +14,21 @@
 #include <NimBLEDevice.h>
 #include "NuSerial.hpp"
 
-#define DEVICE_NAME "ReadBytes demo"
+#define BUTTON_1 14
+// #define DEVICE_NAME "Remigotchi BLE Serial Test"
+#define DEVICE_NAME "Bnyahaj"
 
 void setup()
 {
+    pinMode(BUTTON_1, INPUT_PULLDOWN);
+
     // Initialize serial monitor
     Serial.begin(115200);
-    delay(2000);
+
+    while (!digitalRead(BUTTON_1))
+    {
+    }
+
     Serial.println("*********************");
     Serial.println(" BLE readBytes()demo ");
     Serial.println("*********************");
@@ -55,7 +63,7 @@ void loop()
         while (readBytes == 4)
         {
             // Dump incoming data to the serial monitor
-            Serial.printf("%c%c%c%c\n", buffer[0], buffer[1], buffer[2], buffer[3]);
+            Serial.printf("%c%c%c%c", buffer[0], buffer[1], buffer[2], buffer[3]);
 
             // Receive next chunk
             readBytes = NuSerial.readBytes(buffer, 4);
