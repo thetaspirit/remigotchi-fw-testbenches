@@ -2,21 +2,15 @@
 
 namespace gnss_time
 {
-    /** ESP32 serial port used to communicate with GNSS module */
-    HardwareSerial _serial;
 
     /** internal ublox serial gnss object. completely abstracted away from client code. */
     SFE_UBLOX_GNSS_SERIAL _gnss;
 
     /** internal variable to keep track of sleep state */
-    bool is_asleep;
+    bool _is_asleep;
 
-    /** internal variable to keep track of the number of milliseconds since getPVT has been called.
-     *  it is a timestamp in ms, a call to millis().
-     */
-    unsigned long last_pvt_ms;
-
-    uint32_t last_unix_epoch;
+    /** maximum wait time parameter for when querying GNSS module */
+    uint16_t _max_wait_ms;
 
     /**
      * @brief Helper function to calculate day of week from date (Zeller's congruence)
@@ -45,38 +39,22 @@ namespace gnss_time
         return (h + 6) % 7;
     }
 
-    /**
-     * @brief Fetches latest PVT data from GNSS if timeout has elapsed
-     */
-    static void _updatePVT()
+    bool init(int tx_pin, int rx_pin, uint16_t max_wait_time_ms)
     {
-        unsigned long now = millis();
-        if (now - last_pvt_ms > GNSS_QUERY_TIMEOUT_MS)
-        {
-            if (_gnss.getPVT(GNSS_QUERY_TIMEOUT_MS))
-            {
-                last_pvt_ms = now;
-            }
-        }
-    }
-
-    bool init(HardwareSerial serial_port, int tx_pin, int rx_pin)
-    {
-        _serial = serial_port;
-        is_asleep = false;
-        last_pvt_ms = 0;
+        _is_asleep = false;
+        _max_wait_ms = max_wait_time_ms;
 
         do
         {
             Serial.println("GNSS: trying 38400 baud");
-            _serial.begin(38400, SERIAL_8N1, rx_pin, tx_pin, false, 20000UL, 112);
-            if (_gnss.begin(_serial) == true)
+            GPS_SERIAL.begin(38400, SERIAL_8N1, rx_pin, tx_pin, false, 20000UL, 112);
+            if (_gnss.begin(GPS_SERIAL) == true)
                 break;
 
             delay(100);
             Serial.println("GNSS: trying 9600 baud");
-            _serial.begin(9600, SERIAL_8N1, rx_pin, tx_pin, false, 20000UL, 112);
-            if (_gnss.begin(_serial) == true)
+            GPS_SERIAL.begin(9600, SERIAL_8N1, rx_pin, tx_pin, false, 20000UL, 112);
+            if (_gnss.begin(GPS_SERIAL) == true)
             {
                 Serial.println("GNSS: connected at 9600 baud, switching to 38400");
                 _gnss.setSerialRate(38400);
@@ -91,38 +69,19 @@ namespace gnss_time
         Serial.println("GNSS serial connected");
 
         _gnss.setUART1Output(COM_TYPE_UBX); // Set the UART port to output UBX only
+        _gnss.setNavigationFrequency(4);    // set navigation frequency to 4 Hz
         _gnss.saveConfiguration();          // Save the current settings to flash and BBR
 
         return true;
     }
 
-    bool power_off()
-    {
-        if (!is_asleep)
-        {
-            // TODO: Implement power save mode when available in library
-            // _gnss.setPowerSaveMode(...);
-            is_asleep = true;
-            return true;
-        }
-        return false;
-    }
-
-    bool wake_up()
-    {
-        if (is_asleep)
-        {
-            // TODO: Implement wake-up when power save is implemented
-            // _gnss.wakeUp();
-            is_asleep = false;
-            return true;
-        }
-        return false;
-    }
-
     int estimate_utc_offset()
     {
-        _updatePVT();
+        // give up if gnss fix is bad
+        if (!_gnss.getGnssFixOk(_max_wait_ms))
+        {
+            return UTC_OFFSET_UNAVAILABLE;
+        }
 
         // Get longitude from GNSS module
         int32_t longitude = _gnss.getLongitude();
@@ -178,81 +137,60 @@ namespace gnss_time
         return utcOffset;
     }
 
-    int get_year(int utc_offset)
+    bool get_datetime(int utc_offset, DateTime *datetime)
     {
-        _updatePVT();
-        return _gnss.getYear();
-    }
-
-    int get_month(int utc_offset)
-    {
-        _updatePVT();
-        return _gnss.getMonth();
-    }
-
-    int get_day(int utc_offset)
-    {
-        _updatePVT();
-        int day = _gnss.getDay();
-        int hour = _gnss.getHour();
-
-        // Adjust day if hour wraps around due to UTC offset
-        int adjustedHour = hour + utc_offset;
-        if (adjustedHour < 0)
+        if (!_gnss.getPVT(_max_wait_ms))
         {
+            // Serial.print("no pvt.  ");
+            return false;
+        }
+
+        // Extract date/time values
+        uint16_t year = _gnss.getYear() % 100;
+        uint8_t month = _gnss.getMonth();
+        uint8_t day = _gnss.getDay();
+        uint8_t hour = _gnss.getHour();
+        uint8_t minute = _gnss.getMinute();
+        uint8_t second = _gnss.getSecond();
+
+        // Apply UTC offset to get local time
+        int16_t adjusted_hour = hour + utc_offset;
+        if (adjusted_hour < 0)
+        {
+            adjusted_hour += 24;
             day -= 1;
             if (day < 1)
-                day = 31; // Simplified; proper calendar handling would be better
+                day = 31; // Simplified; doesn't handle all month lengths
         }
-        else if (adjustedHour >= 24)
+        else if (adjusted_hour >= 24)
         {
+            adjusted_hour -= 24;
             day += 1;
             if (day > 31)
-                day = 1; // Simplified; proper calendar handling would be better
+                day = 1; // Simplified; doesn't handle all month lengths
         }
 
-        return day;
+        // Fill in the DateTime struct
+        datetime->year = year + 2000;
+        datetime->month = month;
+        datetime->day = day;
+        datetime->hour = (uint8_t)adjusted_hour;
+        datetime->minute = minute;
+        datetime->second = second;
+        datetime->day_of_week = _calculateDayOfWeek(year, month, day);
+
+        return true;
     }
 
-    int get_day_of_week(int utc_offset)
+    bool get_datetime(DateTime *datetime)
     {
-        _updatePVT();
-        uint8_t year = _gnss.getYear() % 100;
-        uint8_t month = _gnss.getMonth();
-        uint8_t day = get_day(utc_offset);
-
-        return _calculateDayOfWeek(year, month, day);
-    }
-
-    int get_hour(int utc_offset)
-    {
-        _updatePVT();
-        int hour = _gnss.getHour() + utc_offset;
-
-        // Handle wraparound
-        if (hour < 0)
-            hour += 24;
-        else if (hour >= 24)
-            hour -= 24;
-
-        return hour;
-    }
-
-    int get_minute(int utc_offset)
-    {
-        _updatePVT();
-        return _gnss.getMinute();
-    }
-
-    int get_second(int utc_offset)
-    {
-        _updatePVT();
-        return _gnss.getSecond();
+        // Call the overload with explicit offset of 0
+        return get_datetime(0, datetime);
     }
 
     int get_SIV()
     {
-        _updatePVT();
+        _gnss.getPVT();
         return _gnss.getSIV();
     }
 
