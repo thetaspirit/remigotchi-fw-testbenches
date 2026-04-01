@@ -16,7 +16,7 @@
 
 #define BUTTON_1 14
 // #define DEVICE_NAME "Remigotchi BLE Serial Test"
-#define DEVICE_NAME "Bnyahaj"
+#define DEVICE_NAME "BLE Serial Test"
 
 void setup()
 {
