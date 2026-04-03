@@ -9,10 +9,11 @@
 #define SHARED_SCLK 40
 #define RFID_CS 42
 #define RFID_RST UINT8_MAX
-// SPIClass shared_SPI;
+// SPIClass shared_SPI(FSPI);
+SPIClass shared_SPI;
 
 // Create MFRC522 instance
-MFRC522 rfid(RFID_CS, RFID_RST);
+MFRC522 rfid(RFID_CS, RFID_RST, shared_SPI);
 
 void setup()
 {
@@ -29,7 +30,7 @@ void setup()
   Serial.println("========================================");
 
   // Initialize SPI bus with ESP32 pins
-  SPI.begin(SHARED_SCLK, SHARED_CIPO, SHARED_COPI, RFID_CS);
+  shared_SPI.begin(SHARED_SCLK, SHARED_CIPO, SHARED_COPI, RFID_CS);
   pinMode(RFID_CS, OUTPUT);
   digitalWrite(RFID_CS, LOW);
 
