@@ -35,6 +35,7 @@ unsigned int colour = red << 11;
 
 void setup(void) {
   Serial.begin(115200);
+  Serial.println("Beginning");
 
   tft.init();
   tft.setRotation(1);
