@@ -7,11 +7,12 @@
 #define SHARED_COPI 38
 #define SHARED_CIPO 39
 #define SHARED_SCLK 40
-#define RFID_CS 41
+#define RFID_CS 42
+#define RFID_RST UINT8_MAX
 // SPIClass shared_SPI;
 
 // Create MFRC522 instance
-MFRC522 rfid(RFID_CS);
+MFRC522 rfid(RFID_CS, RFID_RST);
 
 void setup()
 {
@@ -29,80 +30,32 @@ void setup()
 
   // Initialize SPI bus with ESP32 pins
   SPI.begin(SHARED_SCLK, SHARED_CIPO, SHARED_COPI, RFID_CS);
+  pinMode(RFID_CS, OUTPUT);
+  digitalWrite(RFID_CS, LOW);
 
   // Initialize MFRC522
   rfid.PCD_Init();
+  delay(10); // Optional delay. Some board do need more time after init to be ready, see Readme
 
-  // Show PCD (Proximity Coupling Device) version
-  byte version = rfid.PCD_ReadRegister(MFRC522::VersionReg);
-  Serial.print(F("MFRC522 Version: 0x"));
-  Serial.println(version, HEX);
+  rfid.PCD_DumpVersionToSerial(); // Show details of PCD - MFRC522 Card Reader details
 
-  // Verify that a compatible version of MFRC522 is being used
-  if ((version == 0x92) || (version == 0x91) || (version == 0x88))
-  {
-    Serial.println(F("RC522 recognized as genuine"));
-  }
-  else
-  {
-    Serial.println(F("WARNING: Possible non-genuine RC522 detected. Some functionality may be unavailable."));
-  }
-
-  // Turn on the backlight
-  Serial.println(F("\nScanning for RFID tags..."));
+  Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
 }
 
 void loop()
 {
-  // Check if a new card is present
+  // Reset the loop if no new card present on the sensor/reader. This saves the entire process when idle.
   if (!rfid.PICC_IsNewCardPresent())
   {
     return;
   }
 
-  // Check if the NUID has been read
+  // Select one of the cards
   if (!rfid.PICC_ReadCardSerial())
   {
     return;
   }
 
-  Serial.println(F("\nCard detected!"));
-
-  // Print UID
-  Serial.print(F("UID: "));
-  for (byte i = 0; i < rfid.uid.size; i++)
-  {
-    if (rfid.uid.uidByte[i] < 0x10)
-    {
-      Serial.print(F("0"));
-    }
-    Serial.print(rfid.uid.uidByte[i], HEX);
-    Serial.print(F(" "));
-  }
-  Serial.println();
-
-  // Print UID as single hex string
-  Serial.print(F("UID (Hex): "));
-  for (byte i = 0; i < rfid.uid.size; i++)
-  {
-    if (rfid.uid.uidByte[i] < 0x10)
-    {
-      Serial.print(F("0"));
-    }
-    Serial.print(rfid.uid.uidByte[i], HEX);
-  }
-  Serial.println();
-
-  // Print card type
-  MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
-  Serial.print(F("Card Type: "));
-  Serial.println(rfid.PICC_GetTypeName(piccType));
-
-  // Halt PICC
-  rfid.PICC_HaltA();
-
-  // Stop encryption on PCD
-  rfid.PCD_StopCrypto1();
-
-  delay(2000); // Wait 2 seconds before reading another card
+  // Dump debug info about the card; PICC_HaltA() is automatically called
+  rfid.PICC_DumpToSerial(&(rfid.uid));
 }
