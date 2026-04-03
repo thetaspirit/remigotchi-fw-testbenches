@@ -48,6 +48,8 @@ void setup(void)
   tft.fillRectVGradient(0, 60, 160, 50, TFT_ORANGE, TFT_RED);
   tft.setCursor(10, 70);
   tft.print("Vertical gradient");
+
+
   sd_SPI.begin(SD_SCLK, SD_CIPO, SD_COPI, SD_CS);
 
   if (!SD.begin(SD_CS, sd_SPI))
