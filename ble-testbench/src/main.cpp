@@ -18,6 +18,8 @@
 // #define DEVICE_NAME "Remigotchi BLE Serial Test"
 #define DEVICE_NAME "BLE Serial Test"
 
+long time_since_print = 0;
+
 void setup()
 {
     pinMode(BUTTON_1, INPUT_PULLDOWN);
@@ -27,6 +29,10 @@ void setup()
 
     while (!digitalRead(BUTTON_1))
     {
+        if (millis() - time_since_print > 750) {
+            Serial.println("Press Button 1 to begin!");
+            time_since_print = millis();
+        }
     }
 
     Serial.println("*********************");

@@ -8,10 +8,10 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "C:/Users/delay/Documents/vscode-workspace/RemiGochi/ble-testbench/include",
-                "C:/Users/delay/Documents/vscode-workspace/RemiGochi/ble-testbench/src",
-                "C:/Users/delay/Documents/vscode-workspace/RemiGochi/ble-testbench/.pio/libdeps/esp32dev/NuS-NimBLE-Serial/src",
-                "C:/Users/delay/Documents/vscode-workspace/RemiGochi/ble-testbench/.pio/libdeps/esp32dev/NimBLE-Arduino/src",
+                "C:/Users/delay/Documents/vscode-workspace/RemiGochi-testbenches/ble-testbench/include",
+                "C:/Users/delay/Documents/vscode-workspace/RemiGochi-testbenches/ble-testbench/src",
+                "C:/Users/delay/Documents/vscode-workspace/RemiGochi-testbenches/ble-testbench/.pio/libdeps/esp32dev/NuS-NimBLE-Serial/src",
+                "C:/Users/delay/Documents/vscode-workspace/RemiGochi-testbenches/ble-testbench/.pio/libdeps/esp32dev/NimBLE-Arduino/src",
                 "C:/Users/delay/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/newlib/platform_include",
                 "C:/Users/delay/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include",
                 "C:/Users/delay/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/esp_additions/freertos",
@@ -249,10 +249,10 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "C:/Users/delay/Documents/vscode-workspace/RemiGochi/ble-testbench/include",
-                    "C:/Users/delay/Documents/vscode-workspace/RemiGochi/ble-testbench/src",
-                    "C:/Users/delay/Documents/vscode-workspace/RemiGochi/ble-testbench/.pio/libdeps/esp32dev/NuS-NimBLE-Serial/src",
-                    "C:/Users/delay/Documents/vscode-workspace/RemiGochi/ble-testbench/.pio/libdeps/esp32dev/NimBLE-Arduino/src",
+                    "C:/Users/delay/Documents/vscode-workspace/RemiGochi-testbenches/ble-testbench/include",
+                    "C:/Users/delay/Documents/vscode-workspace/RemiGochi-testbenches/ble-testbench/src",
+                    "C:/Users/delay/Documents/vscode-workspace/RemiGochi-testbenches/ble-testbench/.pio/libdeps/esp32dev/NuS-NimBLE-Serial/src",
+                    "C:/Users/delay/Documents/vscode-workspace/RemiGochi-testbenches/ble-testbench/.pio/libdeps/esp32dev/NimBLE-Arduino/src",
                     "C:/Users/delay/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/newlib/platform_include",
                     "C:/Users/delay/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include",
                     "C:/Users/delay/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32s3/include/freertos/include/esp_additions/freertos",
