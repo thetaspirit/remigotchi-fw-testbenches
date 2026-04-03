@@ -24,13 +24,19 @@
 #define LCD_DC 9  // Data Command control pin
 #define LCD_RST 3 // Reset pin (could connect to RST pin)
 
+#define SHARED_COPI 38
+#define SHARED_CIPO 39
+#define SHARED_SCLK 40
+
+#define SD_CS 41
+#define RFID_CS 42
+
 SPIClass lcd_SPI(SPI2);
+
+SPIClass shared_SPI(SPI3);
 
 #define BUTTON_1 14
 
-// -------------------------------------------------------------------------
-// Setup
-// -------------------------------------------------------------------------
 void setup(void)
 {
   pinMode(BUTTON_1, INPUT_PULLDOWN);
@@ -41,7 +47,15 @@ void setup(void)
   Serial.begin(115200);
   Serial.println("begin");
 
+  pinMode(LCD_CS, OUTPUT);
+  pinMode(SD_CS, OUTPUT);
+  pinMode(RFID_CS, OUTPUT);
+  digitalWrite(LCD_CS, HIGH);
+  digitalWrite(SD_CS, HIGH);
+  digitalWrite(RFID_CS, HIGH);
+
   lcd_SPI.begin(LCD_SCLK, LCD_CIPO, LCD_COPI, LCD_CS);
+  shared_SPI.begin(SHARED_SCLK, SHARED_CIPO, SHARED_COPI, -1);
 
   // tft.init();
   // Serial.println("tft init");
@@ -51,12 +65,14 @@ void setup(void)
   // tft.setTextFont(2);
 }
 
-uint8_t c = 0x00;
+uint8_t l = 0x00;
+uint8_t s = 0x00;
 void loop()
 {
-  Serial.printf("Loop %x\n", c);
+  Serial.printf("lcd spi = %x shared spi = %x\n", l, s);
 
-  lcd_SPI.transfer(c++);
+  lcd_SPI.transfer(l++);
+  shared_SPI.transfer(s--);
 
   delay(250);
 
