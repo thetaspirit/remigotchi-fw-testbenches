@@ -9,33 +9,20 @@
 */
 
 #include <Arduino.h>
+#define BUTTON_1 14
 
-// #include <TFT_eSPI.h>      // Include the graphics library
-// TFT_eSPI tft = TFT_eSPI(); // Create object "tft"
+#include <TFT_eSPI.h>      // Include the graphics library
+TFT_eSPI tft = TFT_eSPI(); // Create object "tft"
 
 #include <SPI.h>
-#define SPI2 FSPI
-#define SPI3 HSPI
+#include <SD.h>
 
-#define LCD_CIPO 13
-#define LCD_COPI 11
-#define LCD_SCLK 12
-#define LCD_CS 10 // Chip select control pin
-#define LCD_DC 9  // Data Command control pin
-#define LCD_RST 3 // Reset pin (could connect to RST pin)
-
-#define SHARED_COPI 38
-#define SHARED_CIPO 39
-#define SHARED_SCLK 40
-
+#define SD_COPI 38
+#define SD_CIPO 39
+#define SD_SCLK 40
 #define SD_CS 41
-#define RFID_CS 42
-
-SPIClass lcd_SPI(SPI2);
-
-SPIClass shared_SPI(SPI3);
-
-#define BUTTON_1 14
+SPIClass sd_SPI;
+File myFile;
 
 void setup(void)
 {
@@ -47,40 +34,76 @@ void setup(void)
   Serial.begin(115200);
   Serial.println("begin");
 
-  pinMode(LCD_CS, OUTPUT);
-  pinMode(SD_CS, OUTPUT);
-  pinMode(RFID_CS, OUTPUT);
-  digitalWrite(LCD_CS, HIGH);
-  digitalWrite(SD_CS, HIGH);
-  digitalWrite(RFID_CS, HIGH);
+  tft.init();
+  Serial.println("tft init");
 
-  lcd_SPI.begin(LCD_SCLK, LCD_CIPO, LCD_COPI, LCD_CS);
-  shared_SPI.begin(SHARED_SCLK, SHARED_CIPO, SHARED_COPI, -1);
+  tft.setRotation(1);
+  tft.fillScreen(TFT_DARKGREY);
+  tft.setTextFont(2);
 
-  // tft.init();
-  // Serial.println("tft init");
+  tft.fillRectHGradient(0, 0, 160, 50, TFT_MAGENTA, TFT_BLUE);
+  tft.setCursor(10, 10);
+  tft.print("Horizontal gradient");
 
-  // tft.setRotation(1);
-  // tft.fillScreen(TFT_DARKGREY);
-  // tft.setTextFont(2);
+  tft.fillRectVGradient(0, 60, 160, 50, TFT_ORANGE, TFT_RED);
+  tft.setCursor(10, 70);
+  tft.print("Vertical gradient");
+  sd_SPI.begin(SD_SCLK, SD_CIPO, SD_COPI, SD_CS);
+
+  if (!SD.begin(SD_CS, sd_SPI))
+  {
+    while (true)
+    {
+      Serial.println("failed to begin SD card.");
+      delay(500);
+    }
+  }
+
+  Serial.println("SD card initialization done.");
+
+  myFile = SD.open("/test.txt", FILE_WRITE);
+
+  // if the file opened okay, write to it:
+  if (myFile)
+  {
+    Serial.print("Writing to test.txt...");
+    myFile.println("bnyahaj bnyahaj bnyahaj");
+    // close the file:
+    myFile.close();
+    Serial.println("done.");
+  }
+  else
+  {
+    // if the file didn't open, print an error:
+    Serial.println("error opening test.txt");
+  }
+
+  // re-open the file for reading:
+  myFile = SD.open("/test.txt");
+  if (myFile)
+  {
+    Serial.println("contents of test.txt:");
+
+    // read from the file until there's nothing else in it:
+    while (myFile.available())
+    {
+      Serial.write(myFile.read());
+    }
+    // close the file:
+    myFile.close();
+  }
+  else
+  {
+    // if the file didn't open, print an error:
+    Serial.println("error opening test.txt");
+  }
 }
 
-uint8_t l = 0x00;
-uint8_t s = 0x00;
 void loop()
 {
-  Serial.printf("lcd spi = %x shared spi = %x\n", l, s);
 
-  lcd_SPI.transfer(l++);
-  shared_SPI.transfer(s--);
-
-  delay(250);
-
-  // tft.fillRectHGradient(0, 0, 160, 50, TFT_MAGENTA, TFT_BLUE);
-  // tft.setCursor(10, 10);
-  // tft.print("Horizontal gradient");
-
-  // tft.fillRectVGradient(0, 60, 160, 50, TFT_ORANGE, TFT_RED);
-  // tft.setCursor(10, 70);
-  // tft.print("Vertical gradient");
+  while (1)
+  {
+    delay(100);
+  }
 }
