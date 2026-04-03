@@ -10,16 +10,21 @@
 
 #include <Arduino.h>
 
-#include <TFT_eSPI.h>      // Include the graphics library
-TFT_eSPI tft = TFT_eSPI(); // Create object "tft"
+// #include <TFT_eSPI.h>      // Include the graphics library
+// TFT_eSPI tft = TFT_eSPI(); // Create object "tft"
+
+#include <SPI.h>
+#define SPI2 FSPI
+#define SPI3 HSPI
 
 #define LCD_CIPO 13
 #define LCD_COPI 11
 #define LCD_SCLK 12
-#define LCD_CS 10   // Chip select control pin
-#define LCD_DC 9    // Data Command control pin
-#define LCD_RST 8   // Reset pin - changed from 3 to avoid UART0 RX conflict
-SPIClass lcd_SPI;
+#define LCD_CS 10 // Chip select control pin
+#define LCD_DC 9  // Data Command control pin
+#define LCD_RST 3 // Reset pin (could connect to RST pin)
+
+SPIClass lcd_SPI(SPI2);
 
 #define BUTTON_1 14
 
@@ -35,42 +40,31 @@ void setup(void)
 
   Serial.begin(115200);
   Serial.println("begin");
-  Serial.flush();
 
-  // Configure pin modes before SPI init
-  Serial.println("Configuring pins...");
-  pinMode(LCD_CS, OUTPUT);
-  digitalWrite(LCD_CS, HIGH);
-  pinMode(LCD_DC, OUTPUT);
-  pinMode(LCD_RST, OUTPUT);
-  Serial.println("Pins configured");
-  Serial.flush();
+  lcd_SPI.begin(LCD_SCLK, LCD_CIPO, LCD_COPI, LCD_CS);
 
-  // Initialize TFT
-  Serial.println("Calling tft.init...");
-  Serial.flush();
-  tft.init();
-  Serial.println("tft init");
+  // tft.init();
+  // Serial.println("tft init");
 
-  tft.setRotation(1);
-  tft.fillScreen(TFT_DARKGREY);
-  tft.setTextFont(2);
+  // tft.setRotation(1);
+  // tft.fillScreen(TFT_DARKGREY);
+  // tft.setTextFont(2);
 }
 
-// -------------------------------------------------------------------------
-// Main loop
-// -------------------------------------------------------------------------
+uint8_t c = 0x00;
 void loop()
 {
-  Serial.println("Loop");
-  tft.fillRectHGradient(0, 0, 160, 50, TFT_MAGENTA, TFT_BLUE);
-  tft.setCursor(10, 10);
-  tft.print("Horizontal gradient");
+  Serial.printf("Loop %x\n", c);
 
-  tft.fillRectVGradient(0, 60, 160, 50, TFT_ORANGE, TFT_RED);
-  tft.setCursor(10, 70);
-  tft.print("Vertical gradient");
+  lcd_SPI.transfer(c++);
 
-  while (1)
-    delay(100); // Wait here
+  delay(250);
+
+  // tft.fillRectHGradient(0, 0, 160, 50, TFT_MAGENTA, TFT_BLUE);
+  // tft.setCursor(10, 10);
+  // tft.print("Horizontal gradient");
+
+  // tft.fillRectVGradient(0, 60, 160, 50, TFT_ORANGE, TFT_RED);
+  // tft.setCursor(10, 70);
+  // tft.print("Vertical gradient");
 }
