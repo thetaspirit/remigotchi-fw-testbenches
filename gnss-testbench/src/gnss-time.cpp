@@ -1,5 +1,17 @@
 #include "gnss-time.h"
 
+#include "time.h"
+#include <sys/time.h>
+
+#ifdef RTC_DATA_ATTR
+RTC_DATA_ATTR static bool overflow;
+RTC_DATA_ATTR static time_t _last_gnss_update_time = 0;
+// TODO also keep track of most recent timezone bc we can reasonably assume our users don't teleport
+#else
+static bool overflow;
+static time_t _last_gnss_update_time = 0;
+#endif
+
 namespace gnss_time
 {
 
@@ -37,6 +49,118 @@ namespace gnss_time
         uint16_t h = (q + (13 * (m + 1)) / 5 + k + (k / 4) + (j / 4) - 2 * j) % 7;
         // Convert to 0 = Sunday, 1 = Monday, etc. Zeller gives 0 = Saturday
         return (h + 6) % 7;
+    }
+
+    /**
+     * @brief Convert a DateTime struct (UTC) to a timeval struct
+     * @param dt The DateTime struct in UTC
+     * @param tv Pointer to timeval struct to store the result
+     */
+    static void _dateTimeToTimeval(const DateTime &dt, struct timeval &tv)
+    {
+        // Convert broken-down time to Unix timestamp
+        // This algorithm works for years 2000-2099
+        uint16_t year = dt.year;
+        uint8_t month = dt.month;
+        uint8_t day = dt.day;
+
+        // Count days since epoch (1970-01-01)
+        uint32_t days = 0;
+
+        // Count leap years from 1970 to year-1
+        for (uint16_t y = 1970; y < year; y++)
+        {
+            if ((y % 4 == 0 && y % 100 != 0) || (y % 400 == 0))
+                days += 366;
+            else
+                days += 365;
+        }
+
+        // Count days for months in the current year
+        const uint8_t daysInMonth[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        bool isLeapYear = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+
+        for (uint8_t m = 1; m < month; m++)
+        {
+            days += daysInMonth[m];
+            if (m == 2 && isLeapYear)
+                days++;
+        }
+
+        // Add days in current month
+        days += day - 1;
+
+        // Convert to seconds and add time components
+        time_t seconds = (time_t)days * 86400 + dt.hour * 3600 + dt.minute * 60 + dt.second;
+
+        tv.tv_sec = seconds;
+        tv.tv_usec = 0;
+    }
+
+    /**
+     * @brief Convert a timeval struct to a DateTime struct, applying UTC offset
+     * @param tv The timeval struct (contains seconds since epoch)
+     * @param utc_offset The UTC offset in hours to apply
+     * @param dt Pointer to DateTime struct to store the result
+     */
+    static void _timevalToDateTime(const struct timeval &tv, int utc_offset, DateTime &dt)
+    {
+        // Add UTC offset to get local time
+        time_t seconds = tv.tv_sec + ((time_t)utc_offset * 3600);
+
+        // Constants
+        const uint32_t SECONDS_PER_DAY = 86400;
+        uint32_t daysSinceEpoch = seconds / SECONDS_PER_DAY;
+        uint32_t secondsInDay = seconds % SECONDS_PER_DAY;
+
+        // Extract time of day
+        dt.hour = (secondsInDay / 3600) % 24;
+        dt.minute = (secondsInDay / 60) % 60;
+        dt.second = secondsInDay % 60;
+
+        // Calculate date from days since epoch
+        uint16_t year = 1970;
+        uint32_t remainingDays = daysSinceEpoch;
+
+        // Count years from epoch
+        while (true)
+        {
+            uint16_t daysThisYear;
+            if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0))
+                daysThisYear = 366;
+            else
+                daysThisYear = 365;
+
+            if (remainingDays < daysThisYear)
+                break;
+
+            remainingDays -= daysThisYear;
+            year++;
+        }
+
+        dt.year = year;
+
+        // Count months
+        const uint8_t daysInMonth[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        bool isLeapYear = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+
+        uint8_t month = 1;
+        while (remainingDays > 0 && month <= 12)
+        {
+            uint8_t daysThisMonth = daysInMonth[month];
+            if (month == 2 && isLeapYear)
+                daysThisMonth = 29;
+
+            if (remainingDays < daysThisMonth)
+                break;
+
+            remainingDays -= daysThisMonth;
+            month++;
+        }
+
+        dt.month = month;
+        dt.day = remainingDays + 1;
+        dt.day_of_week = _calculateDayOfWeek(year % 100, month, dt.day);
     }
 
     bool init(int tx_pin, int rx_pin, uint16_t max_wait_time_ms)
@@ -137,55 +261,68 @@ namespace gnss_time
         return utcOffset;
     }
 
-    bool get_datetime(int utc_offset, DateTime *datetime)
+    bool get_gnss_datetime(int utc_offset, DateTime *datetime)
     {
         if (!_gnss.getPVT(_max_wait_ms))
         {
-            // Serial.print("no pvt.  ");
+            Serial.print("no pvt. ");
             return false;
         }
 
-        // Extract date/time values
-        uint16_t year = _gnss.getYear() % 100;
-        uint8_t month = _gnss.getMonth();
-        uint8_t day = _gnss.getDay();
-        uint8_t hour = _gnss.getHour();
-        uint8_t minute = _gnss.getMinute();
-        uint8_t second = _gnss.getSecond();
+        // Extract UTC date/time values from GNSS
+        DateTime utc_datetime;
+        utc_datetime.year = _gnss.getYear();
+        utc_datetime.month = _gnss.getMonth();
+        utc_datetime.day = _gnss.getDay();
+        utc_datetime.hour = _gnss.getHour();
+        utc_datetime.minute = _gnss.getMinute();
+        utc_datetime.second = _gnss.getSecond();
+        utc_datetime.day_of_week = _calculateDayOfWeek(utc_datetime.year % 100, utc_datetime.month, utc_datetime.day);
 
-        // Apply UTC offset to get local time
-        int16_t adjusted_hour = hour + utc_offset;
-        if (adjusted_hour < 0)
-        {
-            adjusted_hour += 24;
-            day -= 1;
-            if (day < 1)
-                day = 31; // Simplified; doesn't handle all month lengths
-        }
-        else if (adjusted_hour >= 24)
-        {
-            adjusted_hour -= 24;
-            day += 1;
-            if (day > 31)
-                day = 1; // Simplified; doesn't handle all month lengths
-        }
+        // Convert DateTime (UTC) to timeval
+        struct timeval tv;
+        _dateTimeToTimeval(utc_datetime, tv);
 
-        // Fill in the DateTime struct
-        datetime->year = year + 2000;
-        datetime->month = month;
-        datetime->day = day;
-        datetime->hour = (uint8_t)adjusted_hour;
-        datetime->minute = minute;
-        datetime->second = second;
-        datetime->day_of_week = _calculateDayOfWeek(year, month, day);
+        // Set the system clock with the GNSS time
+        settimeofday(&tv, NULL);
+
+        // Update the last GNSS update time
+        _last_gnss_update_time = tv.tv_sec;
+
+        // Get the current time from the system to ensure we have the latest
+        gettimeofday(&tv, NULL);
+
+        // Convert timeval back to DateTime with UTC offset applied
+        _timevalToDateTime(tv, utc_offset, *datetime);
 
         return true;
     }
 
-    bool get_datetime(DateTime *datetime)
+    bool get_datetime(int utc_offset, DateTime *datetime)
     {
-        // Call the overload with explicit offset of 0
-        return get_datetime(0, datetime);
+        // Get current system time
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+
+        // Check if we need to update from GNSS
+        // Update if more than GNSS_UPDATE_RATE_HOURS have passed
+        time_t elapsed_seconds = tv.tv_sec - _last_gnss_update_time;
+        time_t update_interval_seconds = (time_t)GNSS_UPDATE_RATE_HOURS * 3600;
+
+        if (elapsed_seconds >= update_interval_seconds)
+        {
+            // Try to update from GNSS
+            if (get_gnss_datetime(utc_offset, datetime))
+            {
+                return true;
+            }
+            // If GNSS update fails, fall through to use current system time
+        }
+
+        // Use current system time
+        _timevalToDateTime(tv, utc_offset, *datetime);
+
+        return true;
     }
 
     int get_SIV()

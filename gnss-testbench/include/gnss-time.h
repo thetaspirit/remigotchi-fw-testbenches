@@ -1,17 +1,48 @@
+/**
+ * @file gnss-time.h
+ * @brief GNSS Time Management Library for ESP32
+ *
+ * @author Delaynie McMillan
+ * Most of the functions themselves were written by Copilot, with me controling the overall
+ * architecture and writing the header file and describing what each
+ * function should do and be used for.
+ *
+ * This library manages synchronization of the ESP32's internal RTC with a u-blox GNSS module.
+ * It provides functions to:
+ * - Initialize and communicate with a u-blox MAX-M10S GNSS receiver
+ * - Retrieve accurate UTC time from GNSS satellites
+ * - Estimate local timezone offset from GPS position and DST rules
+ * - Maintain the system clock using gettimeofday()/settimeofday() functions
+ * - Periodically update the RTC from GNSS (default: once per week)
+ *
+ * The library uses a custom DateTime struct for convenient date/time representation
+ * and handles conversions between Unix timestamps (timeval) and broken-down time.
+ *
+ * @note Requires SparkFun u-blox GNSS library (v3+)
+ * @note Uses RTC_DATA_ATTR for persistence across deep sleep
+ */
+
 #pragma once
+
+#ifndef ESP32TIME_H
+#define ESP32TIME_H
+#endif
 
 #include <SparkFun_u-blox_GNSS_v3.h> //http://librarymanager/All#SparkFun_u-blox_GNSS_v3
 
-#define GPS_SERIAL Serial2 // Change this to (e.g.) Serial1 if needed
+#define GPS_SERIAL Serial2
 #define GNSS_QUERY_TIMEOUT_MS 500
 #define UTC_OFFSET_UNAVAILABLE -99
+
+/** Update the microcontroller's internal time once every week (= 7 days = 168 hours) */
+#define GNSS_UPDATE_RATE_HOURS 168
 
 namespace gnss_time
 {
 
     struct DateTime
     {
-        uint16_t year;        // the year
+        uint16_t year;       // the year
         uint8_t month;       // the month [1, 12]
         uint8_t day;         // the day of the month [1, 31]
         uint8_t day_of_week; // day of the week [1, 7]
@@ -37,14 +68,17 @@ namespace gnss_time
     // bool wake_up();   // wakes up GNSS.  must be called before calling other functions if asleep
 
     /**
-     * @brief Uses position, and date to estimate the UTC timezone offset.
+     * @brief Uses position and date to estimate the UTC timezone offset.
      * Also takes into account rudamentary daylight savings time rules.
      * @return an hour offset from UTC.  returns UTC_OFFSET_UNAVAILABLE if it cannot get a GPS fix.
      */
     int estimate_utc_offset();
 
     /**
-     * @brief Retrieves the current date and time with a specified UTC offset.
+     * @brief Retrieves the current date and time and applies the given UTC offset.
+     * The microcontroller uses its internal RTC to keep track of time, and if more than
+     * GNSS_UPDATE_RATE_HOURS hours have passed since updating the time from GNSS,
+     * this function will also attempt to retrieve an updated time from GNSS.
      *
      * @param utc_offset The UTC timezone offset in hours
      * @param datetime Pointer to DateTime struct to store the result
@@ -53,12 +87,15 @@ namespace gnss_time
     bool get_datetime(int utc_offset, DateTime *datetime);
 
     /**
-     * @brief Retrieves the current date and time, assumed UTC offset
+     * @brief Retrieves the current date and time and applies the given UTC offset.
+     * This function will also attempt to retrieve an updated time from GNSS, regardless
+     * of when the last GNSS update was done.
      *
+     * @param utc_offset The UTC timezone offset in hours
      * @param datetime Pointer to DateTime struct to store the result
      * @return true if successful, false if unable to retrieve datetime
      */
-    bool get_datetime(DateTime *datetime);
+    bool get_gnss_datetime(int utc_offset, DateTime *datetime);
 
     int get_SIV(); // returns the number of satellites in view
 }

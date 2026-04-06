@@ -58,7 +58,7 @@ void loop()
 
     // Get current date/time from GNSS module
     gnss_time::DateTime datetime;
-    gnss_time::get_datetime(utc_offset, &datetime);
+    gnss_time::get_gnss_datetime(utc_offset, &datetime);
 
     // Get satellites in view
     int SIV = gnss_time::get_SIV();
