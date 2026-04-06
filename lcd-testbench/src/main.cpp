@@ -82,41 +82,41 @@ void sample_loop()
     rainbow_fill(); // Fill the screen with rainbow colours
 
     // The standard AdaFruit font still works as before
-    tft.setTextColor(TFT_BLACK); // Background is not defined so it is transparent
-    tft.setCursor(100, 5);
-    tft.setTextFont(1); // Select font 1 which is the Adafruit GLCD font
-    tft.print("Original Adafruit font!");
+    // tft.setTextColor(TFT_BLACK); // Background is not defined so it is transparent
+    // tft.setCursor(100, 5);
+    // tft.setTextFont(1); // Select font 1 which is the Adafruit GLCD font
+    // tft.print("Original Adafruit font!");
 
     // The new larger fonts do not need to use the .setCursor call, coords are embedded
-    tft.setTextColor(TFT_BLACK); // Do not plot the background colour
+    // tft.setTextColor(TFT_BLACK); // Do not plot the background colour
     // Overlay the black text on top of the rainbow plot (the advantage of not drawing the background colour!)
-    tft.drawCentreString("Font size 2", 160, 14, 2);        // Draw text centre at position 120, 14 using font 2
-    tft.drawCentreString("Font size 4", 160, 30, 4);        // Draw text centre at position 120, 30 using font 4
-    tft.drawCentreString("12.34", 160, 54, 6);              // Draw text centre at position 120, 54 using font 6
-    tft.drawCentreString("12.34 is in font 6", 160, 92, 2); // Draw text centre at position 120, 92 using font 2
+    // tft.drawCentreString("Font size 2", 160, 14, 2);        // Draw text centre at position 120, 14 using font 2
+    // tft.drawCentreString("Font size 4", 160, 30, 4);        // Draw text centre at position 120, 30 using font 4
+    // tft.drawCentreString("12.34", 160, 54, 6);              // Draw text centre at position 120, 54 using font 6
+    // tft.drawCentreString("12.34 is in font 6", 160, 92, 2); // Draw text centre at position 120, 92 using font 2
     // Note the x, y position is the top left corner of the first character printed!
 
     // draw a floating point number
-    float pi = 3.14159;                                     // Value to print
-    int precision = 3;                                      // Number of digits after decimal point
-    int xpos = 130;                                         // x position
-    int ypos = 110;                                         // y position
-    int font = 2;                                           // font number 2
-    xpos += tft.drawFloat(pi, precision, xpos, ypos, font); // Draw rounded number and return new xpos delta for next print position
-    tft.drawString(" is pi", xpos, ypos, font);             // Continue printing from new x position
+    // float pi = 3.14159;                                     // Value to print
+    // int precision = 3;                                      // Number of digits after decimal point
+    // int xpos = 130;                                         // x position
+    // int ypos = 110;                                         // y position
+    // int font = 2;                                           // font number 2
+    // xpos += tft.drawFloat(pi, precision, xpos, ypos, font); // Draw rounded number and return new xpos delta for next print position
+    // tft.drawString(" is pi", xpos, ypos, font);             // Continue printing from new x position
 
-    tft.setTextSize(1); // We are using a text size multiplier of 1
+    // tft.setTextSize(1); // We are using a text size multiplier of 1
 
-    tft.setTextColor(TFT_BLACK);   // Set text colour to black, no background (so transparent)
-    tft.setCursor(76, 150, 4);     // Set cursor to x = 76, y = 150 and use font 4
-    tft.println("Transparent..."); // As we use println, the cursor moves to the next line
+    // tft.setTextColor(TFT_BLACK);   // Set text colour to black, no background (so transparent)
+    // tft.setCursor(76, 150, 4);     // Set cursor to x = 76, y = 150 and use font 4
+    // tft.println("Transparent..."); // As we use println, the cursor moves to the next line
 
-    tft.setCursor(70, 175);                 // Set cursor to x = 70, y = 175
-    tft.setTextColor(TFT_WHITE, TFT_BLACK); // Set text colour to white and background to black
-    tft.println("White on black");
+    // tft.setCursor(70, 175);                 // Set cursor to x = 70, y = 175
+    // tft.setTextColor(TFT_WHITE, TFT_BLACK); // Set text colour to white and background to black
+    // tft.println("White on black");
 
-    tft.setTextFont(4);     // Select font 4 without moving cursor
-    tft.setCursor(00, 210); // Set cursor to x = 90, y = 210 without changing the font
+    tft.setTextFont(4);    // Select font 4 without moving cursor
+    tft.setCursor(00, 00); // Set cursor to x = 90, y = 210 without changing the font
     tft.setTextColor(TFT_WHITE);
 
     // By using the print class we can use all the formatting features like printing HEX
@@ -124,15 +124,15 @@ void sample_loop()
     tft.println(48879, HEX); // print and move cursor to next line
 
     tft.setTextColor(TFT_GREEN, TFT_BLACK); // This time we will use green text on a black background
-    tft.setTextFont(2);                     // Select font 2
+    // tft.setTextFont(2);                     // Select font 2
     // Text will wrap to the next line if needed, by luck it breaks the lines at a space..
-    tft.println(" Ode to a Small Lump of Green Putty I Found in My Armpit One Midsummer Morning ");
+    // tft.println(" Ode to a Small Lump of Green Putty I Found in My Armpit One Midsummer Morning ");
 
-    tft.drawCentreString("34.56", 160, 300, 7);              // Draw text centre at position 120, 54 using font 6
-    tft.drawCentreString("34.56 is in font 7", 160, 350, 2); // Draw text centre at position 120, 92 using font 2
+    tft.drawString("34.56", 0, 54, 7);              // Draw text centre at position 120, 54 using font 6
+    tft.drawString("34.56 is in font 7", 0, 92, 2); // Draw text centre at position 120, 92 using font 2
 
-    tft.drawCentreString("78.90", 160, 370, 8);              // Draw text centre at position 120, 54 using font 6
-    tft.drawCentreString("78.90 is in font 8", 160, 450, 2); // Draw text centre at position 120, 92 using font 2
+    tft.drawString("78.90", 0, 160, 8);             // Draw text centre at position 120, 54 using font 6
+    tft.drawString("78.90 is in font 8", 0, 92, 2); // Draw text centre at position 120, 92 using font 2
   }
 }
 
