@@ -18,6 +18,7 @@ TFT_eSPI tft = TFT_eSPI(); // Invoke custom library
 #define UPDATE_TIME_MS 5000
 
 #define BUTTON_1 14
+#define BUTTON_2 15
 
 unsigned long last_update = millis();
 byte red = 31;
@@ -46,14 +47,12 @@ const char *getMonthName(uint8_t month)
 void setup(void)
 {
   pinMode(BUTTON_1, INPUT_PULLDOWN);
-  // while (!digitalRead(BUTTON_1))
-  // {
-  // }
+  pinMode(BUTTON_2, INPUT_PULLDOWN);
 
   Serial.begin(115200);
   Serial.println("begin");
 
-  gnss_time::init(4, 5, 300);
+  gnss_time::init(4, 5, 11000);
 
   tft.init();
   tft.setRotation(1);
@@ -62,14 +61,12 @@ void setup(void)
 
 void loop()
 {
-  if (millis() - last_update > UPDATE_TIME_MS)
+  if ((millis() - last_update > UPDATE_TIME_MS) || digitalRead(BUTTON_1))
   {
     last_update = millis();
     rainbow_fill(); // Fill the screen with rainbow colours
 
     // ########################## GET TIME ##########################
-    bool time_fully_resolved = gnss_time::get_time_fully_resolved();
-
     int utc_offset = gnss_time::estimate_utc_offset();
     bool gnss_fix_ok = true;
     if (utc_offset == UTC_OFFSET_UNAVAILABLE)
@@ -77,15 +74,17 @@ void loop()
       gnss_fix_ok = false;
       utc_offset = 0;
     }
+
     gnss_time::DateTime datetime;
-    if (digitalRead(BUTTON_1))
-    {
-      gnss_time::get_datetime(utc_offset, &datetime);
-    }
-    else
-    {
-      gnss_time::get_gnss_datetime(utc_offset, &datetime);
-    }
+    // if (digitalRead(BUTTON_2))
+    // {
+    //   gnss_time::get_datetime(utc_offset, &datetime);
+    // }
+    // else
+    // {
+    //   gnss_time::get_gnss_datetime(utc_offset, &datetime);
+    // }
+    gnss_time::get_gnss_datetime(utc_offset, &datetime);
     int SIV = gnss_time::get_SIV();
 
     // Get day/month names
@@ -93,7 +92,7 @@ void loop()
     const char *monthName = getMonthName(datetime.month);
 
     // ########################## DRAW ##########################
-    tft.setCursor(0, 30);
+    tft.setCursor(0, 0);
     tft.setTextFont(2);
 
     tft.setTextColor(TFT_BLACK);
@@ -110,15 +109,20 @@ void loop()
     tft.setTextColor(TFT_YELLOW, TFT_BLACK);
     tft.printf("%d\n", SIV);
 
-    tft.setTextColor(TFT_BLACK);
-    tft.print("Time fully resolved: ");
-    tft.setTextColor(time_fully_resolved ? TFT_GREENYELLOW : TFT_RED, TFT_BLACK);
-    tft.println(time_fully_resolved ? "YES" : "NO");
+    tft.setTextColor(TFT_BLACK, gnss_fix_ok ? TFT_GREEN : TFT_RED);
+    tft.print("GNSS fix ok.");
 
-    tft.setTextColor(TFT_BLACK);
-    tft.print("GNSS fix ok: ");
-    tft.setTextColor(gnss_fix_ok ? TFT_GREENYELLOW : TFT_RED, TFT_BLACK);
-    tft.println(gnss_fix_ok ? "YES" : "NO");
+    tft.setTextColor(TFT_BLACK, gnss_time::get_time_fully_resolved() ? TFT_GREEN : TFT_RED);
+    tft.print("Time fully resolved.");
+
+    tft.setTextColor(TFT_BLACK, gnss_time::get_date_valid() ? TFT_GREEN : TFT_RED);
+    tft.print("Date valid.");
+    tft.setTextColor(TFT_BLACK, gnss_time::get_time_valid() ? TFT_GREEN : TFT_RED);
+    tft.print("Time valid.");
+    tft.setTextColor(TFT_BLACK, gnss_time::get_confirmed_date() ? TFT_GREEN : TFT_RED);
+    tft.print("Date confirmed.");
+    tft.setTextColor(TFT_BLACK, gnss_time::get_confirmed_time() ? TFT_GREEN : TFT_RED);
+    tft.print("Time confirmed.");
   }
 }
 

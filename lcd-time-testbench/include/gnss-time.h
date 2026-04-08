@@ -99,4 +99,8 @@ namespace gnss_time
 
     int get_SIV();                  // returns the number of satellites in view
     bool get_time_fully_resolved(); // returns whether or not time is able to be fully resolved
+    bool get_date_valid();
+    bool get_time_valid();
+    bool get_confirmed_date();
+    bool get_confirmed_time();
 }

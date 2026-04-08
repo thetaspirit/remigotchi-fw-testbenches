@@ -193,8 +193,8 @@ namespace gnss_time
         Serial.println("GNSS serial connected");
 
         _gnss.setUART1Output(COM_TYPE_UBX); // Set the UART port to output UBX only
-        _gnss.setNavigationFrequency(4);    // set navigation frequency to 4 Hz
-        _gnss.saveConfiguration();          // Save the current settings to flash and BBR
+        // _gnss.setNavigationFrequency(4);    // set navigation frequency to 4 Hz
+        _gnss.saveConfiguration(); // Save the current settings to flash and BBR
 
         return true;
     }
@@ -263,16 +263,16 @@ namespace gnss_time
 
     bool get_gnss_datetime(int utc_offset, DateTime *datetime)
     {
-        if (!_gnss.getPVT(_max_wait_ms))
-        {
-            Serial.print("no pvt. ");
-            return false;
-        }
-        if (!_gnss.getTimeFullyResolved(_max_wait_ms))
-        {
-            Serial.print("time not fully resolved. ");
-            return false;
-        }
+        // if (!_gnss.getPVT(_max_wait_ms))
+        // {
+        //     Serial.print("no pvt. ");
+        //     return false;
+        // }
+        // if (!_gnss.getTimeFullyResolved(_max_wait_ms))
+        // {
+        //     Serial.print("time not fully resolved. ");
+        //     return false;
+        // }
 
         // Extract UTC date/time values from GNSS
         DateTime utc_datetime;
@@ -342,4 +342,20 @@ namespace gnss_time
         return _gnss.getTimeFullyResolved(_max_wait_ms);
     }
 
+    bool get_date_valid()
+    {
+        return _gnss.getDateValid(_max_wait_ms);
+    }
+    bool get_time_valid()
+    {
+        return _gnss.getTimeValid(_max_wait_ms);
+    }
+    bool get_confirmed_date()
+    {
+        return _gnss.getConfirmedDate(_max_wait_ms);
+    }
+    bool get_confirmed_time()
+    {
+        return _gnss.getConfirmedTime(_max_wait_ms);
+    }
 }
