@@ -11,14 +11,35 @@
  */
 
 #include <Arduino.h>
+#include <stdint.h>
 #include <NimBLEDevice.h>
 #include "NuSerial.hpp"
 
 #define BUTTON_1 14
 // #define DEVICE_NAME "Remigotchi BLE Serial Test"
-#define DEVICE_NAME "BLE Serial Test"
+#define DEVICE_NAME "Remigotchi 18500"
 
 long time_since_print = 0;
+
+typedef struct {
+    // 32 bytes
+    char name[32];
+    // 2 bytes
+    uint16_t period;
+    uint16_t start_time;
+    uint16_t end_time;
+    // 1 byte
+    uint8_t days_of_week;
+    uint8_t padding[1];
+} event_t;
+
+event_t newEvent = {
+    "Test Event",
+    60,
+    540,
+    1260,
+    124
+};
 
 void setup()
 {
@@ -32,6 +53,9 @@ void setup()
         if (millis() - time_since_print > 750) {
             Serial.println("Press Button 1 to begin!");
             time_since_print = millis();
+            Serial.printf("Size of event_t = %d bytes\n", sizeof(event_t));
+            Serial.printf("newEvent: name = %s, period = %d, start = %d, end = %d, days = %d\n",
+                newEvent.name, newEvent.period, newEvent.start_time, newEvent.end_time, newEvent.days_of_week);
         }
     }
 
