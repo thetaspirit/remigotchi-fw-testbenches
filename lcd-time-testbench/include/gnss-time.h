@@ -75,6 +75,15 @@ namespace gnss_time
     int estimate_utc_offset();
 
     /**
+     * @brief This library will remember the most recent (valid) UTC offset it estimated based on the user's position.
+     * Note that this data will only ever get updated if 2 things happen:
+     * 1) The user actually calls the estimate_utc_offset() function and
+     * 2) That function was able to get a resonably accurate GNSS fix to make such an estimation.
+     * @return the most recent and accurate UTC offset estimation.
+     */
+    int get_saved_utc_offset();
+
+    /**
      * @brief Retrieves the current date and time and applies the given UTC offset.
      * The microcontroller uses its internal RTC to keep track of time, and if more than
      * GNSS_UPDATE_RATE_HOURS hours have passed since updating the time from GNSS,

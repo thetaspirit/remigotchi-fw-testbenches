@@ -63,17 +63,17 @@ void loop()
 {
   if ((millis() - last_update > UPDATE_TIME_MS) || digitalRead(BUTTON_1))
   {
-    last_update = millis();
     rainbow_fill(); // Fill the screen with rainbow colours
 
     // ########################## GET TIME ##########################
-    int utc_offset = gnss_time::estimate_utc_offset();
-    bool gnss_fix_ok = true;
-    if (utc_offset == UTC_OFFSET_UNAVAILABLE)
-    {
-      gnss_fix_ok = false;
-      utc_offset = 0;
-    }
+    int utc_offset = 0;
+    // int utc_offset = gnss_time::estimate_utc_offset();
+    // bool gnss_fix_ok = true;
+    // if (utc_offset == UTC_OFFSET_UNAVAILABLE)
+    // {
+    //   gnss_fix_ok = false;
+    //   utc_offset = 0;
+    // }
 
     gnss_time::DateTime datetime;
     // if (digitalRead(BUTTON_2))
@@ -100,29 +100,31 @@ void loop()
 
     tft.printf("%s, %s %02d, %d\n", dayName, monthName, datetime.day, datetime.year);
 
-    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
     tft.printf("%02d:%02d:%02d (UTC%+d)\n", datetime.hour, datetime.minute, datetime.second, utc_offset);
 
     tft.setTextColor(TFT_BLACK);
     tft.setTextSize(2);
     tft.print("Satellites in view: ");
-    tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
     tft.printf("%d\n", SIV);
 
-    tft.setTextColor(TFT_BLACK, gnss_fix_ok ? TFT_GREEN : TFT_RED);
-    tft.print("GNSS fix ok.");
+    // tft.setTextColor(TFT_BLACK, gnss_fix_ok ? TFT_GREEN : TFT_RED);
+    // tft.print("GNSS fix ok.");
 
-    tft.setTextColor(TFT_BLACK, gnss_time::get_time_fully_resolved() ? TFT_GREEN : TFT_RED);
-    tft.print("Time fully resolved.");
+    // tft.setTextColor(TFT_BLACK, gnss_time::get_time_fully_resolved() ? TFT_GREEN : TFT_RED);
+    // tft.print("Time fully resolved.");
 
     tft.setTextColor(TFT_BLACK, gnss_time::get_date_valid() ? TFT_GREEN : TFT_RED);
     tft.print("Date valid.");
     tft.setTextColor(TFT_BLACK, gnss_time::get_time_valid() ? TFT_GREEN : TFT_RED);
     tft.print("Time valid.");
-    tft.setTextColor(TFT_BLACK, gnss_time::get_confirmed_date() ? TFT_GREEN : TFT_RED);
-    tft.print("Date confirmed.");
-    tft.setTextColor(TFT_BLACK, gnss_time::get_confirmed_time() ? TFT_GREEN : TFT_RED);
-    tft.print("Time confirmed.");
+    // tft.setTextColor(TFT_BLACK, gnss_time::get_confirmed_date() ? TFT_GREEN : TFT_RED);
+    // tft.print("Date confirmed.");
+    // tft.setTextColor(TFT_BLACK, gnss_time::get_confirmed_time() ? TFT_GREEN : TFT_RED);
+    // tft.print("Time confirmed.");
+
+    last_update = millis();
   }
 }
 

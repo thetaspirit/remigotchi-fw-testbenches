@@ -4,11 +4,12 @@
 #include <sys/time.h>
 
 #ifdef RTC_DATA_ATTR
-RTC_DATA_ATTR static bool overflow;
+RTC_DATA_ATTR static bool _overflow;
 RTC_DATA_ATTR static time_t _last_gnss_update_time = 0;
+RTC_DATA_ATTR static int _utc_offset = UTC_OFFSET_UNAVAILABLE;
 // TODO also keep track of most recent timezone bc we can reasonably assume our users don't teleport
 #else
-static bool overflow;
+static bool _overflow;
 static time_t _last_gnss_update_time = 0;
 #endif
 
@@ -201,11 +202,14 @@ namespace gnss_time
 
     int estimate_utc_offset()
     {
-        // give up if gnss fix is bad
-        if (!_gnss.getGnssFixOk(_max_wait_ms))
-        {
-            return UTC_OFFSET_UNAVAILABLE;
-        }
+        uint32_t horiz_acc = _gnss.getHorizontalAccuracy();
+        Serial.printf("Horizontal acc = %d\n", horiz_acc);
+
+        // give up if location solution is bad
+        // if (_gnss.getHorizontalAccuracy() == 0 || )
+        // {
+        //     return UTC_OFFSET_UNAVAILABLE;
+        // }
 
         // Get longitude from GNSS module
         int32_t longitude = _gnss.getLongitude();
@@ -258,34 +262,42 @@ namespace gnss_time
             }
         }
 
+        _utc_offset = utcOffset;
         return utcOffset;
+    }
+
+    int get_saved_utc_offset()
+    {
+        return _utc_offset;
     }
 
     bool get_gnss_datetime(int utc_offset, DateTime *datetime)
     {
-        // if (!_gnss.getPVT(_max_wait_ms))
-        // {
-        //     Serial.print("no pvt. ");
-        //     return false;
-        // }
-        // if (!_gnss.getTimeFullyResolved(_max_wait_ms))
-        // {
-        //     Serial.print("time not fully resolved. ");
-        //     return false;
-        // }
+        // Retrieve the currently-stored timeval from the RTC
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
 
-        // Extract UTC date/time values from GNSS
+        // Convert the timeval to DateTime (in UTC)
         DateTime utc_datetime;
-        utc_datetime.year = _gnss.getYear();
-        utc_datetime.month = _gnss.getMonth();
-        utc_datetime.day = _gnss.getDay();
-        utc_datetime.hour = _gnss.getHour();
-        utc_datetime.minute = _gnss.getMinute();
-        utc_datetime.second = _gnss.getSecond();
-        utc_datetime.day_of_week = _calculateDayOfWeek(utc_datetime.year % 100, utc_datetime.month, utc_datetime.day);
+        _timevalToDateTime(tv, 0, *datetime);
+
+        // Extract date values from GNSS
+        if (get_date_valid())
+        {
+            utc_datetime.year = _gnss.getYear();
+            utc_datetime.month = _gnss.getMonth();
+            utc_datetime.day = _gnss.getDay();
+            utc_datetime.day_of_week = _calculateDayOfWeek(utc_datetime.year % 100, utc_datetime.month, utc_datetime.day);
+        }
+        // Extract time values from GNSS
+        if (get_time_valid())
+        {
+            utc_datetime.hour = _gnss.getHour();
+            utc_datetime.minute = _gnss.getMinute();
+            utc_datetime.second = _gnss.getSecond();
+        }
 
         // Convert DateTime (UTC) to timeval
-        struct timeval tv;
         _dateTimeToTimeval(utc_datetime, tv);
 
         // Set the system clock with the GNSS time
