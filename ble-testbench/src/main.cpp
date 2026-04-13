@@ -16,12 +16,13 @@
 #include "NuSerial.hpp"
 
 #define BUTTON_1 14
-// #define DEVICE_NAME "Remigotchi BLE Serial Test"
 #define DEVICE_NAME "Remigotchi 18500"
+#define BUFFER_SIZE 40
 
 long time_since_print = 0;
 
-typedef struct {
+typedef struct
+{
     // 32 bytes
     char name[32];
     // 2 bytes
@@ -38,8 +39,26 @@ event_t newEvent = {
     60,
     540,
     1260,
-    124
-};
+    124};
+
+uint8_t buffer[BUFFER_SIZE];
+uint8_t buff_idx;
+
+/**
+ * Blocks until connection is acquired.
+ * Will actually wait forever.
+ */
+void connect_ble_serial()
+{
+    if (!NuSerial.isConnected())
+    {
+        Serial.println("--Waiting for connection--");
+        if (NuSerial.connect()) // blocking check
+        {
+            Serial.println("--Connected--");
+        }
+    }
+}
 
 void setup()
 {
@@ -50,12 +69,13 @@ void setup()
 
     while (!digitalRead(BUTTON_1))
     {
-        if (millis() - time_since_print > 750) {
+        if (millis() - time_since_print > 750)
+        {
             Serial.println("Press Button 1 to begin!");
             time_since_print = millis();
             Serial.printf("Size of event_t = %d bytes\n", sizeof(event_t));
             Serial.printf("newEvent: name = %s, period = %d, start = %d, end = %d, days = %d\n",
-                newEvent.name, newEvent.period, newEvent.start_time, newEvent.end_time, newEvent.days_of_week);
+                          newEvent.name, newEvent.period, newEvent.start_time, newEvent.end_time, newEvent.days_of_week);
         }
     }
 
@@ -71,45 +91,36 @@ void setup()
     NuSerial.start();
 
     // Initialization complete
+    buff_idx = 0;
     Serial.println("--Ready--");
+    connect_ble_serial();
 }
 
 void loop()
 {
-    uint8_t buffer[4];
-    size_t readBytes;
-
-    Serial.println("--Waiting for connection--");
-    // Block current task until a connection is established.
-    // This is not active waiting, so the CPU is free for other tasks.
-    if (NuSerial.connect())
+    if (NuSerial.isConnected())
     {
-        Serial.println("--Connected--");
-
-        // Receive data in chunks of 4 bytes.
+        // Receive data in chunks of BUFFER_SIZE bytes.
         // Current task is blocked until data is received or connection is lost.
         // This is not active waiting.
-        readBytes = NuSerial.readBytes(buffer, 4);
-        while (readBytes == 4)
+        while (NuSerial.available())
         {
-            // Dump incoming data to the serial monitor
-            Serial.printf("%c%c%c%c", buffer[0], buffer[1], buffer[2], buffer[3]);
-
-            // Receive next chunk
-            readBytes = NuSerial.readBytes(buffer, 4);
-        }
-        // At this point the connection is lost, but some data may be still unread
-        if (readBytes > 0)
-        {
-            // Dump remaining data
-            int i = 0;
-            while (readBytes > 0)
+            int data = NuSerial.read();
+            if (data != -1)
             {
-                Serial.printf("%c", buffer[i++]);
-                readBytes--;
+                buffer[buff_idx] = (uint8_t)data;
+                Serial.printf("0x%x %c i = %d\n", buffer[buff_idx], buffer[buff_idx], buff_idx);
+                buff_idx++;
+                buff_idx %= BUFFER_SIZE;
             }
-            Serial.println("");
         }
+    }
+
+    if (!NuSerial.isConnected())
+    {
         Serial.println("--Disconnected--");
+
+        // try to reconnect
+        connect_ble_serial();
     }
 }
