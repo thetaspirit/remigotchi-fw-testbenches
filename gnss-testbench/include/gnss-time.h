@@ -70,9 +70,18 @@ namespace gnss_time
     /**
      * @brief Uses position and date to estimate the UTC timezone offset.
      * Also takes into account rudamentary daylight savings time rules.
-     * @return an hour offset from UTC.  returns UTC_OFFSET_UNAVAILABLE if it cannot get a GPS fix.
+     * @return an hour offset from UTC.  returns UTC_OFFSET_UNAVAILABLE if it cannot get a GNSS fix.
      */
     int estimate_utc_offset();
+
+    /**
+     * @brief This library will remember the most recent (valid) UTC offset it estimated based on the user's position.
+     * Note that this data will only ever get updated if 2 things happen:
+     * 1) The user actually calls the estimate_utc_offset() function and
+     * 2) That function was able to get a resonably accurate GNSS fix to make such an estimation.
+     * @return the most recent and accurate UTC offset estimation.
+     */
+    int get_saved_utc_offset();
 
     /**
      * @brief Retrieves the current date and time and applies the given UTC offset.
@@ -97,5 +106,10 @@ namespace gnss_time
      */
     bool get_gnss_datetime(int utc_offset, DateTime *datetime);
 
-    int get_SIV(); // returns the number of satellites in view
+    int get_SIV();                  // returns the number of satellites in view
+    bool get_time_fully_resolved(); // returns whether or not time is able to be fully resolved
+    bool get_date_valid();
+    bool get_time_valid();
+    bool get_confirmed_date();
+    bool get_confirmed_time();
 }
