@@ -37,7 +37,12 @@ namespace ble_schedule
     void stop()
     {
         NuSerial.stop();
+            Serial.println("--Stopped--");
         free(buffer);
+    }
+
+    bool ble_is_connected() {
+        return NuSerial.isConnected();
     }
 
     void read_bytes()

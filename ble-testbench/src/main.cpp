@@ -33,37 +33,33 @@ void setup()
     {
         if (millis() - time_since_print > 750)
         {
-            Serial.println("Press Button 1 to init ble");
+            Serial.println("Press Button 1 to begin");
             time_since_print = millis();
         }
     }
 
-    ble_schedule::init();
-
-    while (!digitalRead(BUTTON_1))
-    {
-        if (millis() - time_since_print > 750)
-        {
-            Serial.println("Press Button 1 to call connect fn");
-            time_since_print = millis();
-        }
-    }
-
-    ble_schedule::ble_connect();
+    ble_schedule::start();
+    ble_schedule::block_until_connected();
 }
 
 void loop()
 {
     if (digitalRead(BUTTON_2))
     {
-        ble_schedule::ble_disconnect();
+        Serial.println("Button 2 pressed");
+        ble_schedule::stop();
+        delay(100);
     }
 
-    if (!NuSerial.isConnected())
+    if (!ble_schedule::ble_is_connected())
     {
         Serial.println("--Disconnected--");
-
         // try to reconnect
-        connect_ble_serial();
+        ble_schedule::start();
+        ble_schedule::block_until_connected();
+    }
+    else
+    {
+        ble_schedule::read_bytes();
     }
 }
