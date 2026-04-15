@@ -112,4 +112,18 @@ namespace gnss_time
     bool get_time_valid();
     bool get_confirmed_date();
     bool get_confirmed_time();
+
+    /**
+     * @brief Accesses time from RTC, converts it to a DateTime (in UTC), and stores it
+     * in the provided datetime variable.
+     */
+    void only_get_rtc_datetime(DateTime *datetime);
+
+    /**
+     * @brief Attempts to retrieve the current date and time from GNSS satellites.
+     *
+     * @param datetime Pointer to DateTime struct to store the result
+     * @return true if successful, false if unable to retrieve datetime
+     */
+    bool only_get_gnss_datetime(DateTime *datetime);
 }

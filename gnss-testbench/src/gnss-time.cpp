@@ -273,6 +273,9 @@ namespace gnss_time
 
     bool get_gnss_datetime(int utc_offset, DateTime *datetime)
     {
+        // TODO change return type to a status code indicating if date got updated,
+        // time got updated, or both
+
         // Retrieve the currently-stored timeval from the RTC
         struct timeval tv;
         gettimeofday(&tv, NULL);
@@ -369,5 +372,32 @@ namespace gnss_time
     bool get_confirmed_time()
     {
         return _gnss.getConfirmedTime(_max_wait_ms);
+    }
+
+    void only_get_rtc_datetime(DateTime *datetime)
+    {
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        _timevalToDateTime(tv, 0, *datetime);
+    }
+
+    bool only_get_gnss_datetime(DateTime *datetime)
+    {
+        // Extract date values from GNSS
+        if (get_date_valid())
+        {
+            datetime->year = _gnss.getYear();
+            datetime->month = _gnss.getMonth();
+            datetime->day = _gnss.getDay();
+            datetime->day_of_week = _calculateDayOfWeek(datetime->year % 100, datetime->month, datetime->day);
+        }
+        // Extract time values from GNSS
+        if (get_time_valid())
+        {
+            datetime->hour = _gnss.getHour();
+            datetime->minute = _gnss.getMinute();
+            datetime->second = _gnss.getSecond();
+        }
+        return true;
     }
 }
