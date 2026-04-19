@@ -106,7 +106,8 @@ namespace gnss_time
      */
     bool get_gnss_datetime(int utc_offset, DateTime *datetime);
 
-    int get_SIV();                  // returns the number of satellites in view
+    int get_SIV(); // returns the number of satellites in view
+    bool get_gnss_fix_ok();
     bool get_time_fully_resolved(); // returns whether or not time is able to be fully resolved
     bool get_date_valid();
     bool get_time_valid();

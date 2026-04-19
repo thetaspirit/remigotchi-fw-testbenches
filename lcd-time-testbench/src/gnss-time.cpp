@@ -349,6 +349,10 @@ namespace gnss_time
         return _gnss.getSIV(_max_wait_ms);
     }
 
+    bool get_gnss_fix_ok()
+    {
+        return _gnss.getGnssFixOk();
+    }
     bool get_time_fully_resolved()
     {
         return _gnss.getTimeFullyResolved(_max_wait_ms);
