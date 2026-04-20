@@ -74,6 +74,32 @@ void setup(void)
 
 void loop()
 {
+  // poll validity each loop
+  if (!gnss_fix)
+  {
+    if (gnss_time::get_gnss_fix_ok())
+    {
+      ms_to_gnss_fix = millis();
+      gnss_fix = true;
+    }
+  }
+  if (!time_valid)
+  {
+    if (gnss_time::get_time_valid())
+    {
+      ms_to_time_valid = millis();
+      time_valid = true;
+    }
+  }
+  if (!date_valid)
+  {
+    if (gnss_time::get_date_valid())
+    {
+      ms_to_date_valid = millis();
+      date_valid = true;
+    }
+  }
+
   if (((unsigned long)(millis() - last_update) > UPDATE_TIME_MS) || digitalRead(BUTTON_1))
   {
     tft.fillScreen(TFT_BLACK);
