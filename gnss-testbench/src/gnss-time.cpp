@@ -384,20 +384,14 @@ namespace gnss_time
     bool only_get_gnss_datetime(DateTime *datetime)
     {
         // Extract date values from GNSS
-        if (get_date_valid())
-        {
             datetime->year = _gnss.getYear();
             datetime->month = _gnss.getMonth();
             datetime->day = _gnss.getDay();
             datetime->day_of_week = _calculateDayOfWeek(datetime->year % 100, datetime->month, datetime->day);
-        }
         // Extract time values from GNSS
-        if (get_time_valid())
-        {
             datetime->hour = _gnss.getHour();
             datetime->minute = _gnss.getMinute();
             datetime->second = _gnss.getSecond();
-        }
         return true;
     }
 }

@@ -70,11 +70,7 @@ void setup()
   esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
   if (cause == ESP_SLEEP_WAKEUP_EXT0)
   {
-    while (1)
-    {
-      Serial.println("Woke up from button press!");
-      delay(500);
-    }
+    Serial.println("Woke up from button press!");
   }
   else
   {
@@ -110,23 +106,27 @@ void loop()
     // query SIV
     int SIV = gnss_time::get_SIV();
     Serial.printf("Satellites in view: %d\n", SIV);
+    Serial.printf("Date valid: %s.\tTime valid: %s.\n",
+                  gnss_time::get_date_valid() ? "yes" : "no",
+                  gnss_time::get_time_valid() ? "yes" : "no");
 
     // query GNSS
     gnss_time::only_get_gnss_datetime(&datetime);
-    Serial.printf("GNSS: %s, %s %d, %d  %02d:%02d:%02d (UTC)\n",
+    Serial.printf("GNSS:\t%s, %s %d, %d  %02d:%02d:%02d (UTC)\n",
                   getDayOfWeekName(datetime.day_of_week), getMonthName(datetime.month), datetime.day, datetime.year,
                   datetime.hour, datetime.minute, datetime.second);
 
     // query RTC
     gnss_time::only_get_rtc_datetime(&datetime);
-    Serial.printf("RTC: %s, %s %d, %d  %02d:%02d:%02d (UTC)\n",
+    Serial.printf("RTC:\t%s, %s %d, %d  %02d:%02d:%02d (UTC)\n",
                   getDayOfWeekName(datetime.day_of_week), getMonthName(datetime.month), datetime.day, datetime.year,
                   datetime.hour, datetime.minute, datetime.second);
 
     // time since last RTC update
-    int minutes = last_rtc_update / 60000;
-    float seconds = (float)(minutes % 60000) / 1000.0;
-    Serial.printf("RTC was updated %d min, %2.3f sec ago. (%lu ms)\n", minutes, seconds, last_rtc_update);
+    unsigned long t = millis() - last_rtc_update;
+    int minutes = t / 60000;
+    float seconds = (float)(t % 60000) / 1000.0;
+    Serial.printf("RTC was updated %d min, %2.3f sec ago. (%lu ms)\n", minutes, seconds, t);
 
     // battery level
     uint16_t adc_batt_mv = analogReadMilliVolts(BATT_MON);
