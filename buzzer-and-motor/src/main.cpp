@@ -26,18 +26,12 @@ int i = 0;
 
 void loop()
 {
-    digitalWrite(BUZZER, LOW);
-    Serial.printf("i = %d\n", i++);
-    delay(100);
-
-    /*
     Serial.printf("Freq = %d Hz\n", freq);
-    tone(buzzer, freq);
+    tone(BUZZER, freq);
     freq *= 2;
     if (freq > 1760)
     {
         freq = 110;
     }
     delay(5000);
-    */
 }
