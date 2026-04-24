@@ -20,7 +20,12 @@ TFT_eSPI tft = TFT_eSPI(); // Invoke custom library
 #define BUTTON_1 14
 #define BUTTON_2 15
 #define BUTTON_3 16
+#define BUTTON_4 48
+#define DEBOUNCE 100
+
 #define BATT_MON 7
+
+#define BACKLIGHT 8
 
 unsigned long last_update;
 
@@ -47,12 +52,34 @@ const char *getMonthName(uint8_t month)
   return monthNames[month % 13];
 }
 
+void wait_for_button_release(int pin_num)
+{
+  while (digitalRead(pin_num))
+  {
+    delay(10);
+  }
+  delay(DEBOUNCE);
+}
+
+void backlight_set_brightness(int percent)
+{
+  int brightness = 100 - percent;        // make it backwards because the backlight is active-low
+  brightness = (brightness * 255) / 100; // scale it from [0, 100] to [0, 255]
+  analogWrite(BACKLIGHT, brightness);
+  Serial.printf("Setting brightness to %d (%d%%)\n", brightness, percent);
+}
+
 void setup(void)
 {
   pinMode(BUTTON_1, INPUT_PULLDOWN);
   pinMode(BUTTON_2, INPUT_PULLDOWN);
   pinMode(BUTTON_3, INPUT_PULLDOWN);
+  pinMode(BUTTON_4, INPUT_PULLDOWN);
+
   analogReadMilliVolts(BATT_MON);
+
+  pinMode(BACKLIGHT, OUTPUT);
+  backlight_set_brightness(100);
 
   Serial.begin(115200);
   Serial.println("begin");
@@ -72,8 +99,11 @@ void setup(void)
   last_update = millis() + UPDATE_TIME_MS + 1;
 }
 
+int16_t brightness = 100;
+
 void loop()
 {
+  /*
   // poll validity each loop
   if (!gnss_fix)
   {
@@ -98,6 +128,18 @@ void loop()
       ms_to_date_valid = millis();
       date_valid = true;
     }
+  }
+    */
+
+  if (digitalRead(BUTTON_4))
+  {
+    wait_for_button_release(BUTTON_4);
+    brightness -= 20;
+    if (brightness < 0)
+    {
+      brightness = 100;
+    }
+    backlight_set_brightness(brightness);
   }
 
   if (((unsigned long)(millis() - last_update) > UPDATE_TIME_MS) || digitalRead(BUTTON_1))
@@ -209,9 +251,11 @@ void loop()
     }
 
     // ########################## BATTERY MONITOR ##########################
-    Serial.printf("Battery monitor = %1.3f V\n", ((float)analogReadMilliVolts(BATT_MON)) / 1000.0);
+    float divider_v = ((float)analogReadMilliVolts(BATT_MON)) / 1000.0;
+    float batt_v = (divider_v * 370.0) / 270.0;
+    // Serial.printf("Battery monitor = %1.3f V\n", );
     tft.setTextColor(TFT_VIOLET);
-    tft.printf("Battery monitor = %1.3f V\n", ((float)analogReadMilliVolts(BATT_MON)) / 1000.0);
+    tft.printf("Battery monitor = %1.3f V (input = %1.3f)\n", divider_v, batt_v);
 
     last_update = millis();
   }
