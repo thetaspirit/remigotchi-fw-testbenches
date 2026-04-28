@@ -17,15 +17,14 @@ MFRC522 rfid(RFID_CS, RFID_RST, shared_SPI);
 
 void setup()
 {
-  // Initialize Serial communication
-  Serial.begin(115200);
-  delay(100);
-
   pinMode(BUTTON_1, INPUT_PULLDOWN);
   while (!digitalRead(BUTTON_1))
   {
-    Serial.println("Press Button 1 to begin.");
   }
+
+  // Initialize Serial communication
+  Serial.begin(115200);
+  delay(100);
 
   Serial.println("\n\nESP32-S3 RC522 RFID Reader Initialized");
   Serial.println("========================================");
@@ -46,14 +45,6 @@ void setup()
 
 void loop()
 {
-  delay(100);
-  
-  if (!digitalRead(BUTTON_1))
-  {
-    // Serial.println("Hold Button 1 to scan.");
-    return;
-  }
-
   // Reset the loop if no new card present on the sensor/reader. This saves the entire process when idle.
   if (!rfid.PICC_IsNewCardPresent())
   {
@@ -68,13 +59,4 @@ void loop()
 
   // Dump debug info about the card; PICC_HaltA() is automatically called
   rfid.PICC_DumpToSerial(&(rfid.uid));
-
-  // Print the UID
-  // Serial.print("UID: ");
-  // for (byte i = 0; i < rfid.uid.size; i++)
-  // {
-  //   Serial.print(rfid.uid.uidByte[i] < 0x10 ? " 0" : " ");
-  //   Serial.print(rfid.uid.uidByte[i], HEX);
-  // }
-  // Serial.println();
 }
